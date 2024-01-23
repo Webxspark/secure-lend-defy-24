@@ -2,6 +2,10 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import heroAbstractSvg from '../assets/hero.svg';
 import ellipse from '../assets/ellipse.png';
+import { SafeAuthPack } from "@safe-global/auth-kit";
+import { ethers, BrowserProvider } from "ethers";
+import { EthersAdapter, SafeFactory } from "@safe-global/protocol-kit";
+
 
 const LandingPage = () => {
     return (
