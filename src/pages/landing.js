@@ -123,7 +123,7 @@ const LandingPage = () => {
                         </div>
                     }
             </div>
-            {/* <img src={heroAbstractSvg} alt='hero' className='w-full lg:block hidden absolute bottom-0 h-64' /> */}
+            <img src={heroAbstractSvg} alt='hero' className='w-full lg:block hidden absolute bottom-0 h-64' />
             <img src={ellipse} alt='ellipse' className='w-1/2 absolute bottom-16 left-10 -z-20' />
         </div>
     );

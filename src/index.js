@@ -5,8 +5,10 @@ import App from './App';
 import { BrowserRouter } from 'react-router-dom';
 import { ConfigProvider, theme } from 'antd';
 import { GlobalContextProvider } from './contexts/globalcontext';
+import { AnonAadhaarProvider } from 'anon-aadhaar-react';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+const app_id = process.env.REACT_APP_ID || "";
 root.render(
   <React.StrictMode>
     <BrowserRouter>
@@ -16,7 +18,9 @@ root.render(
         }}
       >
         <GlobalContextProvider>
-          <App />
+          <AnonAadhaarProvider _appId={app_id} _isWeb={false}>
+            <App />
+          </AnonAadhaarProvider>
         </GlobalContextProvider>
       </ConfigProvider>
     </BrowserRouter>

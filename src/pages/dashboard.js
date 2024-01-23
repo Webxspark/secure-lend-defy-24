@@ -5,12 +5,18 @@ import { GlobalContext } from '../contexts/globalcontext';
 import { useNavigate } from 'react-router-dom';
 import Preloader from '../components/preloader';
 import { trimWalletAddress } from '../functions/fn';
-
+import { AnonAadhaarProof, AnonAadhaarProvider, LogInWithAnonAadhaar, useAnonAadhaar } from "anon-aadhaar-react";
+import { ethers, BrowserProvider } from "ethers";
+import { EthersAdapter, SafeFactory } from "@safe-global/protocol-kit";
+import { CONTRACT_ABI, CONTRACT_ADDRESS } from "../constant";
 const Dashboard = () => {
-    const { account } = useContext(GlobalContext);
+    const { account, toast } = useContext(GlobalContext);
     const isMounted = useRef(false);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const [anonAadhaar] = useAnonAadhaar();
+    const [usession, setUsession] = useState({});
+    const provider = new BrowserProvider(account.safeAuthPack.getProvider());
     useEffect(() => {
         if (!isMounted.current) {
             isMounted.current = true;
@@ -27,6 +33,13 @@ const Dashboard = () => {
         '30%': '#d7c70e',
         '100%': '#04db00'
     }
+    useEffect(() => {
+        ;(async () => {
+            console.log("Anon Aadhaar status: ", anonAadhaar.status);
+            var ldata = JSON.parse(localStorage.getItem("anonAadhaar") || "{}");
+            console.log(ldata);
+        })()
+    }, [anonAadhaar])
     return (
         <div className='text-white font-[Poppins]'>
             {
@@ -37,7 +50,7 @@ const Dashboard = () => {
                         <div className='w-full'>Secure</div>
                         <div className='w-full flex justify-end'>
                             <button className='bg-white lg:text-base text-sm font-[Poppins] font-semibold rounded-full text-black px-6 py-2'>
-                                {trimWalletAddress(account.safes[0])}
+                                {trimWalletAddress(account?.safes[0] || "")}
                             </button>
                         </div>
                     </div>
@@ -79,6 +92,23 @@ const Dashboard = () => {
                                 </div>
                             </div>
                             <div className='w-full'>
+                                    <h1 className='text-sm font-semibold'>Get your Aadhar Verified</h1>
+                                    <div className='my-2 border-[1px] rounded-xl p-8 border-[#ffffff4d]'>
+                                        <form className='flex flex-col gap-y-6' onSubmit={e => e.preventDefault()}>
+                                            {anonAadhaar?.status !== "logged-in" && <div className="my-7 w-full flex flex-col gap-y-1 items-center justify-center">
+                                            <p className='text-sm text-center'>Verification of Aadhar is mandatory</p>
+                                                <LogInWithAnonAadhaar />
+                                            </div>}
+                                            {anonAadhaar?.status === "logged-in" && (
+                                                <>
+                                                    <p>✅ Aadhaar verified</p>
+                                                    <AnonAadhaarProof code={JSON.stringify(anonAadhaar.pcd, null, 2)} />
+                                                </>
+                                            )}
+                                        </form>
+                                    </div>
+                            </div>
+                            {/* <div className='w-full'>
                                 <div className='flex flex-col gap-y-3'>
                                     <div className='grid grid-cols-12 gap-x-1 text-sm text-[#FFFFFF99]'>
                                         <div className='col-span-2'>SI No.</div>
@@ -112,7 +142,7 @@ const Dashboard = () => {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 </div>
