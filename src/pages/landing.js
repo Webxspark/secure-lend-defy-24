@@ -20,7 +20,7 @@ const LandingPage = () => {
             if(account.safes.length == 0){
                 setBtnView('new-wallet')
             } else {
-                navigate('/dashboard');
+                navigate('/markets');
             }
             console.log(account.safes);
             console.log(account);

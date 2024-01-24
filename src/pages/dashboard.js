@@ -1,4 +1,4 @@
-import { Input, Progress, Select } from 'antd';
+import { DatePicker, Input, Progress, Select } from 'antd';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { MdOutlineCheck, MdOutlineClose } from "react-icons/md";
 import { GlobalContext } from '../contexts/globalcontext';
@@ -7,16 +7,22 @@ import Preloader from '../components/preloader';
 import { trimWalletAddress } from '../functions/fn';
 import { AnonAadhaarProof, AnonAadhaarProvider, LogInWithAnonAadhaar, useAnonAadhaar } from "anon-aadhaar-react";
 import { ethers, BrowserProvider } from "ethers";
-import { EthersAdapter, SafeFactory } from "@safe-global/protocol-kit";
-import { CONTRACT_ABI, CONTRACT_ADDRESS } from "../constant";
+import Safe, { EthersAdapter, SafeFactory, PredictedSafeProps } from "@safe-global/protocol-kit";
+import { CONTRACT_ABI, CONTRACT_ABI_2, CONTRACT_ADDRESS } from "../constant";
+import dayjs from 'dayjs';
+import { formatEther, parseEther, parseGwei } from "viem";
 const Dashboard = () => {
     const { account, toast } = useContext(GlobalContext);
     const isMounted = useRef(false);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
     const [anonAadhaar] = useAnonAadhaar();
+    const [loanAmount, setLoanAmount] = useState('');
+    const [collateralAmount, setCollateralAmount] = useState('');
+    const [dueDate, setDueDate] = useState('');
     const [usession, setUsession] = useState({});
     const provider = new BrowserProvider(account.safeAuthPack.getProvider());
+    const [btnDisabled, setBtnDisabled] = useState(false);
     useEffect(() => {
         if (!isMounted.current) {
             isMounted.current = true;
@@ -34,12 +40,84 @@ const Dashboard = () => {
         '100%': '#04db00'
     }
     useEffect(() => {
-        ;(async () => {
+        ; (async () => {
             console.log("Anon Aadhaar status: ", anonAadhaar.status);
             var ldata = JSON.parse(localStorage.getItem("anonAadhaar") || "{}");
             console.log(ldata);
         })()
     }, [anonAadhaar])
+
+    const handleBorrowFormSubmit = async (e) => {
+        e.preventDefault();
+        //validate
+        if (loanAmount == '' || collateralAmount == '' || dueDate == '') {
+            toast.error("Please fill all the fields");
+            return;
+        }
+        const loanAmountInWei = parseEther(loanAmount);
+        const collateralAmountInWei = parseEther(collateralAmount);
+        //convert date to unix timestamp
+        const dueDateUnix = dayjs(dueDate).unix();
+        console.log(loanAmountInWei, collateralAmountInWei, dueDateUnix);
+        // return;
+        // const user = await account.safeAuthPack.getUserInfo();
+        setBtnDisabled(true);
+        const txsigner = await provider.getSigner();
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, JSON.parse(JSON.stringify(CONTRACT_ABI_2)), txsigner);
+        const ethAdapter = new EthersAdapter({
+            ethers,
+            // signer: txsigner,
+            signerOrProvider: txsigner || provider,
+        });
+
+        const protocolKit = await Safe.create({
+            ethAdapter,
+            safeAddress: account.safes[0],
+        })
+
+
+        // const safeFactory = await SafeFactory.create({ ethAdapter });
+        // const owner = account.ownerAddress;
+        // const safe = await safeFactory.deploySafe({ owner, 1 });
+
+        // const safeTransaction = await safe.createTransaction({
+        //     to: '0xTargetContractAddress',
+        //     value: '0x0',
+        //     data: '0xTransactionData',
+        //     operation: 0,
+        //     safeTxGas: 100000,
+        //     baseGas: 10000,
+        //     gasPrice: 10000000000,
+        //     gasToken: '0x0',
+        //     nonce: 0,
+        //     chainId: await ethAdapter.getChainId(),
+        // });
+        try {
+            const encodedFunction = ethers.encodeBytes32String('sendEther(address, uint256)');
+            const encodedParam = ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256'], [account.ownerAddress, loanAmountInWei]);
+            const transactionata = ethers.concat([encodedFunction, encodedParam]);
+            const safeTransactionData = {
+                to: `${CONTRACT_ADDRESS}`,
+                data: transactionata,
+                value: '0x0',
+            }
+            const safeTransaction = await protocolKit.createTransaction({
+                transactions: [safeTransactionData],
+            });
+            await protocolKit.signTypedData(safeTransaction)
+            console.log(await protocolKit.executeTransaction(safeTransaction));
+        } catch (e) {
+            // console.log(e);
+        }
+        setBtnDisabled(false);
+        toast.success("Transaction sent!");
+        //clear form
+        setLoanAmount('');
+        setCollateralAmount('');
+        setDueDate('');
+        //clear console
+        console.clear();
+    }
     return (
         <div className='text-white font-[Poppins]'>
             {
@@ -67,46 +145,55 @@ const Dashboard = () => {
                                 <div className="w-full lg:w-auto">
                                     <h1 className='text-sm font-semibold'>Credit Score</h1>
                                     <div className='w-full flex items-center justify-center my-2 border-[1px] rounded-xl px-16  py-4 border-[#ffffff4d]'>
-                                        <Progress format={percent => 625} type='dashboard' percent={(625 / 1000) * 100} strokeWidth={10} strokeColor={creditScoreChartColors} />
+                                        <Progress format={percent => 0} type='dashboard' percent={(2 / 100) * 100} strokeWidth={10} strokeColor={creditScoreChartColors} />
                                     </div>
                                 </div>
                             </div>
-                            <div className='w-full'>
+                            {anonAadhaar?.status === "logged-in" && (<div className='w-full'>
                                 <h1 className='text-sm font-semibold'>Borrow</h1>
                                 <div className='my-2 border-[1px] rounded-xl p-8 border-[#ffffff4d]'>
-                                    <form className='flex flex-col gap-y-6' onSubmit={e => e.preventDefault()}>
+                                    <form className='flex flex-col gap-y-6' onSubmit={handleBorrowFormSubmit}>
                                         <div className='flex flex-col gap-y-1'>
-                                            <label htmlFor='amount' className='text-xs'>Token</label>
-                                            <Input id='amount' placeholder='Token Amount' />
+                                            <label htmlFor='amount' className='text-xs'>Loan Amount</label>
+                                            <Input value={loanAmount} onChange={e => setLoanAmount(e.target.value)} id='amount' placeholder='Ex: 0.1 ETH' />
                                         </div>
                                         <div className='flex flex-col gap-y-1'>
-                                            <label htmlFor='amount' className='text-xs'>Select Chain</label>
-                                            <Select id='amount' placeholder='Select a chain' ></Select>
+                                            <label htmlFor='amount' className='text-xs'>Collateral Amount</label>
+                                            <Input value={collateralAmount} onChange={e => setCollateralAmount(e.target.value)} id='amount' placeholder='Ex: 0.1 ETH' />
+                                        </div>
+                                        <div className='flex flex-col gap-y-1'>
+                                            <label htmlFor='amount' className='text-xs'>Repayment Due-date</label>
+                                            <DatePicker value={
+                                                dueDate ? dayjs(dueDate) : undefined
+                                            } id='amount' onChange={e => {
+                                                setDueDate(e?.format('YYYY-MM-DD'))
+                                            }} placeholder='Select a date' />
                                         </div>
                                         <div className='w-full flex'>
-                                            <button className='bg-[#141414] w-full py-2 text-sm rounded-md uppercase text-[#C9C9C999]'>
-                                                Request
+                                            <button disabled={btnDisabled} className='bg-[#141414] w-full py-2 text-sm rounded-md uppercase text-[#C9C9C999]'>
+                                                {btnDisabled ? "Please wait" : "Request"}
                                             </button>
                                         </div>
                                     </form>
                                 </div>
                             </div>
+                            )}
                             <div className='w-full'>
-                                    <h1 className='text-sm font-semibold'>Get your Aadhar Verified</h1>
-                                    <div className='my-2 border-[1px] rounded-xl p-8 border-[#ffffff4d]'>
-                                        <form className='flex flex-col gap-y-6' onSubmit={e => e.preventDefault()}>
-                                            {anonAadhaar?.status !== "logged-in" && <div className="my-7 w-full flex flex-col gap-y-1 items-center justify-center">
+                                <h1 className='text-sm font-semibold'>Get your Aadhar Verified</h1>
+                                <div className='my-2 border-[1px] rounded-xl p-8 border-[#ffffff4d]'>
+                                    <form className='flex flex-col gap-y-6' onSubmit={e => e.preventDefault()}>
+                                        {anonAadhaar?.status !== "logged-in" && <div className="my-7 w-full flex flex-col gap-y-1 items-center justify-center">
                                             <p className='text-sm text-center'>Verification of Aadhar is mandatory</p>
-                                                <LogInWithAnonAadhaar />
-                                            </div>}
-                                            {anonAadhaar?.status === "logged-in" && (
-                                                <>
-                                                    <p>✅ Aadhaar verified</p>
-                                                    <AnonAadhaarProof code={JSON.stringify(anonAadhaar.pcd, null, 2)} />
-                                                </>
-                                            )}
-                                        </form>
-                                    </div>
+                                            <LogInWithAnonAadhaar />
+                                        </div>}
+                                        {anonAadhaar?.status === "logged-in" && (
+                                            <>
+                                                <p>✅ Aadhaar verified</p>
+                                                <AnonAadhaarProof code={JSON.stringify(anonAadhaar.pcd, null, 2)} />
+                                            </>
+                                        )}
+                                    </form>
+                                </div>
                             </div>
                             {/* <div className='w-full'>
                                 <div className='flex flex-col gap-y-3'>
