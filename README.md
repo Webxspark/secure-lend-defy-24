@@ -1,8 +1,6 @@
 # SecureLend
 ## _Reinventing Decentralized Lending_
 
-[https://youtu.be/AtnGWOqEC5g] 
-
 ## Overview
 
 SecureLend is a revolutionary decentralized lending platform built on blockchain technology, offering a secure, private, and user-friendly environment for borrowers and lenders. With a commitment to privacy, security, and legal compliance, SecureLend introduces innovative features like Account Abstraction and Anon Aadhar for enhanced user protection.
@@ -33,7 +31,7 @@ SecureLend is a revolutionary decentralized lending platform built on blockchain
 - Cred reputation systems
 
 
-And of course SecureLend itself is open source with a [public repository][https://github.com/Webxspark/secure-lend-defy-24]
+And of course SecureLend itself is open source with a [public repository](https://github.com/Webxspark/secure-lend-defy-24)
  on GitHub.
 
 # Conclusion

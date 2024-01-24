@@ -84,7 +84,7 @@ const LandingPage = () => {
         <div className='text-white font-[Inter] relative h-screen'>
             {/* Navbar start */}
             <div className='my-6 mx-10 flex items-center justify-between'>
-                <div className='w-full'>Secure</div>
+                <div className='w-full'>SecureLend</div>
                 <div className='w-full hidden md:flex items-center justify-center gap-x-4 uppercase'>
                     <Link className='hover:underline underline-offset-4'>Home</Link>
                     <Link className='hover:underline underline-offset-4'>About us</Link>

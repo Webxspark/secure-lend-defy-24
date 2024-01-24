@@ -125,7 +125,7 @@ const Dashboard = () => {
                 || <div>
                     {/* Navbar start */}
                     <div className='my-6 mx-10 flex items-center justify-between'>
-                        <div className='w-full'>Secure</div>
+                        <div className='w-full'>SecureLend</div>
                         <div className='w-full flex justify-end'>
                             <button className='bg-white lg:text-base text-sm font-[Poppins] font-semibold rounded-full text-black px-6 py-2'>
                                 {trimWalletAddress(account?.safes[0] || "")}
